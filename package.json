@@ -1,0 +1,16 @@
+{
+  "name": "careercraft-ai-root",
+  "version": "1.0.0",
+  "description": "Root conductor for CareerCraft-AI monorepo deployment",
+  "main": "Backend/server.js",
+  "scripts": {
+    "install-backend": "cd Backend && npm install",
+    "install-frontend": "cd Frontend && npm install",
+    "build-frontend": "cd Frontend && npm run build",
+    "build": "npm run install-backend && npm run install-frontend && npm run build-frontend",
+    "start": "cd Backend && node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
