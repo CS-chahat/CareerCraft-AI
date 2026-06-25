@@ -12,7 +12,7 @@ The project combines Artificial Intelligence, Resume Parsing, Authentication, Fi
 
 🚀 **Website**
 
-https://careercraft-ai.yourdomain.com
+https://careercraft-ai-8v2u.onrender.com
 
 # ✨ Key Features
 
