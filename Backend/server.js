@@ -11,8 +11,9 @@ const path = require('path');
 // Serve static files from the Frontend dist directory
 app.use(express.static(path.join(__dirname, '../Frontend/dist')));
 
-// Handle any requests that don't match your backend API routes by sending back the index.html
-app.get('*', (req, res) => {
+
+// ✅ New syntax compatible with modern path-to-regexp matching
+app.get('*path', (req, res) => {
     res.sendFile(path.join(__dirname, '../Frontend/dist', 'index.html'));
 });
 
