@@ -1,11 +1,13 @@
-
-
 import axios from "axios";
 
+// Your exact configuration
 const API = axios.create({
-    baseURL: "/api/auth",
-    withCredentials: true
+  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'
 });
+
+export default API;
+
+// --- AUTH FUNCTIONS ---
 
 export async function register({ username, email, password }) {
     try {
@@ -13,11 +15,10 @@ export async function register({ username, email, password }) {
         return response.data;
     } catch (err) {
         console.error("Register Error:", err);
-        throw err; // Throwing error so useAuth knows it failed
+        throw err; 
     }
 }
 
-// FIX: Destructured { email, password } to match how you call it in useAuth
 export async function login({ email, password }) {
     try {
         const response = await API.post("/login", { email, password });
@@ -43,7 +44,20 @@ export async function getMe() {
         const response = await API.get("/get-me");
         return response.data;
     } catch (err) {
-        // Do not use console.log here to prevent spamming console logs on every boot 
         throw err; 
+    }
+}
+
+// --- INTERVIEW FUNCTIONS ---
+
+// NEW: This fixes the localhost:3000/api/interview/1 error from your screenshot
+export async function generateInterviewStrategy(payload) {
+    try {
+        // Appending /api/interview/1 directly to your baseURL setup
+        const response = await API.post("/api/interview/1", payload);
+        return response.data;
+    } catch (err) {
+        console.error("Interview Generation Error:", err);
+        throw err;
     }
 }
