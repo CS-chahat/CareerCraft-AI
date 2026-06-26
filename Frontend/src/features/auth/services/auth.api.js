@@ -1,4 +1,4 @@
-import api from "../../../../services/api"; 
+import api from "../../../services/api"; 
 
 // --- AUTH FUNCTIONS ---
 export async function register({ username, email, password }) {
