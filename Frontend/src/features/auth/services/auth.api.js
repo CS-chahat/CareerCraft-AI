@@ -1,10 +1,9 @@
 import axios from "axios";
 
-const API = axios.create({
-  // Fixed for Vite environment variables
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
-  withCredentials: true // Crucial if you are using cookie-parser on the backend
-});
+const api = axios.create({
+    baseURL: "http://localhost:3000", // Hardcoded local link
+    withCredentials: true,
+})
 
 export default API;
 

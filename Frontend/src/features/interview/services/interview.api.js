@@ -2,10 +2,9 @@ import axios from "axios";
 
 // UPDATED: Dynamically checks for the production environment variable or defaults to localhost
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000",
+    baseURL: "http://localhost:3000", // Hardcoded local link
     withCredentials: true,
 })
-
 /**
  * @description Service to generate interview report based on user self description, resume and job description.
  */
