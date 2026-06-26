@@ -1,23 +1,25 @@
-require("dotenv").config()
-const express = require("express")
-const app = require("./src/app")
-const connectToDB = require("./src/config/database.js")
-
-
-// 1. Connect to your database
-connectToDB()
+require("dotenv").config();
+const express = require("express");
+const app = require("./src/app");
+const connectToDB = require("./src/config/database.js");
 const path = require('path');
 
-// Serve static files from the Frontend dist directory
+// 1. Connect to your database
+connectToDB();
+
+// 2. Serve static files from the Frontend dist directory
+// Since server.js is inside Backend/, '__dirname' is 'your-project/Backend'.
+// '../Frontend/dist' correctly steps up to root, then steps into Frontend/dist.
 app.use(express.static(path.join(__dirname, '../Frontend/dist')));
 
-
-// ✅ New syntax compatible with modern path-to-regexp matching
-app.get('*path', (req, res) => {
+// 3. Catch-all route to handle React Router client-side page loads
+app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, '../Frontend/dist', 'index.html'));
 });
 
-// 3. Start your network port listener
-app.listen(3000, () => {
-    console.log("Server is running on port 3000")
-})
+// 4. Start your network port listener
+// Render provides a dynamic port using process.env.PORT, falling back to 3000 locally
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
