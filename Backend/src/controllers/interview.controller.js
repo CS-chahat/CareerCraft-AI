@@ -9,13 +9,6 @@ const interviewReportModel = require("../models/interviewReport.model")
  */
 async function generateInterViewReportController(req, res) {
     try {
-        // 1. Guard check: Ensure a file was actually uploaded by the client
-        if (!req.file) {
-            return res.status(400).json({
-                message: "No resume file uploaded. Please upload a valid PDF resume."
-            })
-        }
-
         const { selfDescription, jobDescription } = req.body
         if (!selfDescription || !jobDescription) {
             return res.status(400).json({
@@ -23,18 +16,25 @@ async function generateInterViewReportController(req, res) {
             })
         }
 
-        // 2. Fixed pdf-parse invocation syntax to handle buffer securely
-        const parsedPdf = await pdfParse(req.file.buffer)
-        const resumeText = parsedPdf.text
+        // ✅ FIX: Make resume file structurally optional instead of failing with a strict 400 block
+        let resumeText = "";
+        if (req.file) {
+            // Only execute pdf-parse tracking if a physical resume binary was attached
+            const parsedPdf = await pdfParse(req.file.buffer)
+            resumeText = parsedPdf.text
+        } else {
+            // Secure fallback text injection for Gemini processing
+            resumeText = "No resume provided. Rely entirely on the user self-description profile.";
+        }
 
-        // 3. Hand off data to AI service (using gemini-1.5-flash)
+        // Hand off data to AI service (using gemini-1.5-flash)
         const interViewReportByAi = await generateInterviewReport({
             resume: resumeText,
             selfDescription,
             jobDescription
         })
 
-        // 4. Save structured report to database
+        // Save structured report to database
         const interviewReport = await interviewReportModel.create({
             user: req.user.id,
             resume: resumeText,
@@ -84,7 +84,8 @@ async function getInterviewReportByIdController(req, res) {
     }
 }
 
-/** * @description Controller to get all interview reports of logged in user.
+/** 
+ * @description Controller to get all interview reports of logged in user.
  */
 async function getAllInterviewReportsController(req, res) {
     try {
