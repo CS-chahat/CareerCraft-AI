@@ -1,18 +1,16 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: "http://localhost:3000", // Hardcoded local link
+    baseURL: "http://localhost:3000",
     withCredentials: true,
 })
 
-export default API;
+export default api; // Fixed to lowercase
 
 // --- AUTH FUNCTIONS ---
-// Added "/api/auth" prefix to match your backend app.js configuration
-
 export async function register({ username, email, password }) {
     try {
-        const response = await API.post("/api/auth/register", { username, email, password });
+        const response = await api.post("/api/auth/register", { username, email, password }); // Fixed to lowercase
         return response.data;
     } catch (err) {
         console.error("Register Error:", err);
@@ -22,7 +20,7 @@ export async function register({ username, email, password }) {
 
 export async function login({ email, password }) {
     try {
-        const response = await API.post("/api/auth/login", { email, password });
+        const response = await api.post("/api/auth/login", { email, password }); // Fixed to lowercase
         return response.data;
     } catch (err) {
         console.error("Login Error:", err);
@@ -32,7 +30,7 @@ export async function login({ email, password }) {
 
 export async function logout() {
     try {
-        const response = await API.get("/api/auth/logout");
+        const response = await api.get("/api/auth/logout"); // Fixed to lowercase
         return response.data;
     } catch (err) {
         console.error("Logout Error:", err);
@@ -42,7 +40,7 @@ export async function logout() {
 
 export async function getMe() {
     try {
-        const response = await API.get("/api/auth/get-me");
+        const response = await api.get("/api/auth/get-me"); // Fixed to lowercase
         return response.data;
     } catch (err) {
         throw err; 
@@ -50,12 +48,9 @@ export async function getMe() {
 }
 
 // --- INTERVIEW FUNCTIONS ---
-
 export async function generateInterviewStrategy(payload) {
     try {
-        // Your backend already prefixes this with "/api/interview", 
-        // so you only need to post to "/1" or whatever the remaining route parameter is.
-        const response = await API.post("/api/interview/1", payload); 
+        const response = await api.post("/api/interview/1", payload); // Fixed to lowercase
         return response.data;
     } catch (err) {
         console.error("Interview Generation Error:", err);
