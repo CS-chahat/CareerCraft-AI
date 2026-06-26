@@ -3,15 +3,15 @@ const mongoose = require('mongoose');
 const technicalQuestionSchema = new mongoose.Schema({
     question: {
         type: String,
-        required: [true, "Technical question is required"]
+        default: ""
     },
     intention: {
         type: String,
-        required: [true, "Intention is required"]
+        default: ""
     },
     answer: {
         type: String,
-        required: [true, "Answer is required"]
+        default: ""
     }
 }, {
     _id: false
@@ -20,15 +20,15 @@ const technicalQuestionSchema = new mongoose.Schema({
 const behavioralQuestionSchema = new mongoose.Schema({
     question: {
         type: String,
-        required: [true, "Behavioral question is required"] // Fixed typo in error message string context
+        default: ""
     },
     intention: {
         type: String,
-        required: [true, "Intention is required"]
+        default: ""
     },
     answer: {
         type: String,
-        required: [true, "Answer is required"]
+        default: ""
     }
 }, {
     _id: false
@@ -37,12 +37,12 @@ const behavioralQuestionSchema = new mongoose.Schema({
 const skillGapSchema = new mongoose.Schema({
     skill: {
         type: String,
-        required: [true, "Skill is required"]
+        default: ""
     },
     severity: {
         type: String,
-        enum: ["low", "medium", "high"],
-        required: [true, "Severity is required"]
+        enum: ["low", "medium", "high", ""],
+        default: "medium"
     }
 }, {
     _id: false
@@ -51,19 +51,18 @@ const skillGapSchema = new mongoose.Schema({
 const preparationPlanSchema = new mongoose.Schema({
     day: {
         type: Number,
-        required: [true, "Day is required"]
+        default: 1
     },
     focus: {
         type: String,
-        required: [true, "Focus is required"]
+        default: "General Technical Prep"
     },
-    // Cleaned syntax structure definition to standard validation array layout
     tasks: {
         type: [String],
-        required: [true, "Tasks array is required"]
+        default: []
     }
 }, {
-    _id: false // Prevents generating random object IDs inside your nested sub-arrays
+    _id: false 
 });
 
 const interviewReportSchema = new mongoose.Schema({
@@ -85,17 +84,29 @@ const interviewReportSchema = new mongoose.Schema({
         max: 100,
         default: 0
     },
-    technicalQuestions: [technicalQuestionSchema],
-    behavioralQuestions: [behavioralQuestionSchema],
-    skillGaps: [skillGapSchema],
-    preparationPlan: [preparationPlanSchema],
+    technicalQuestions: {
+        type: [technicalQuestionSchema],
+        default: []
+    },
+    behavioralQuestions: {
+        type: [behavioralQuestionSchema],
+        default: []
+    },
+    skillGaps: {
+        type: [skillGapSchema],
+        default: []
+    },
+    preparationPlan: {
+        type: [preparationPlanSchema],
+        default: []
+    },
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "users"
     },
     title: {
         type: String,
-        required: [true, "Job title is required"]
+        default: "Custom Interview Strategy Plan" // Guard option in case AI skips the key
     }
 }, {
     timestamps: true
