@@ -5,14 +5,24 @@ const upload = require("../middlewares/file.middleware")
 
 const interviewRouter = express.Router()
 
-
-
 /**
  * @route POST /api/interview/
  * @description generate new interview report on the basis of user self description,resume pdf and job description.
  * @access private
  */
-interviewRouter.post("/", authMiddleware.authUser, upload.single("resume"), interviewController.generateInterViewReportController)
+interviewRouter.post("/", authMiddleware.authUser, (req, res, next) => {
+    // Wrap multer explicitly to handle optional file uploads safely
+    upload.single("resume")(req, res, (err) => {
+        if (err) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "File processing failed", 
+                error: err.message 
+            });
+        }
+        next();
+    });
+}, interviewController.generateInterViewReportController);
 
 /**
  * @route GET /api/interview/report/:interviewId
@@ -21,7 +31,6 @@ interviewRouter.post("/", authMiddleware.authUser, upload.single("resume"), inte
  */
 interviewRouter.get("/report/:interviewId", authMiddleware.authUser, interviewController.getInterviewReportByIdController)
 
-
 /**
  * @route GET /api/interview/
  * @description get all interview reports of logged in user.
@@ -29,14 +38,11 @@ interviewRouter.get("/report/:interviewId", authMiddleware.authUser, interviewCo
  */
 interviewRouter.get("/", authMiddleware.authUser, interviewController.getAllInterviewReportsController)
 
-
 /**
  * @route GET /api/interview/resume/pdf
  * @description generate resume pdf on the basis of user self description, resume content and job description.
  * @access private
  */
 interviewRouter.post("/resume/pdf/:interviewReportId", authMiddleware.authUser, interviewController.generateResumePdfController)
-
-
 
 module.exports = interviewRouter
