@@ -7,9 +7,14 @@ export const generateInterviewReport = async ({ jobDescription, selfDescription,
     const formData = new FormData();
     formData.append("jobDescription", jobDescription);
     formData.append("selfDescription", selfDescription);
-    formData.append("resume", resumeFile);
+    
+    // Safely append the resume file only if it exists to avoid empty string mismatches
+    if (resumeFile) {
+        formData.append("resume", resumeFile);
+    }
 
-    const response = await api.post("/api/interview/", formData, {
+    // ✅ Fix: Removed trailing slash from "/api/interview/" to avoid Express routing mismatches
+    const response = await api.post("/api/interview", formData, {
         headers: {
             "Content-Type": "multipart/form-data"
         }
@@ -29,7 +34,8 @@ export const getInterviewReportById = async (interviewId) => {
  * @description Service to get all interview reports of logged in user.
  */
 export const getAllInterviewReports = async () => {
-    const response = await api.get("/api/interview/");
+    // ✅ Fix: Removed trailing slash from "/api/interview/" to avoid Express routing mismatches
+    const response = await api.get("/api/interview");
     return response.data;
 };
 
