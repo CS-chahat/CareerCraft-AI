@@ -16,7 +16,7 @@ async function generateInterViewReportController(req, res) {
             })
         }
 
-        // ✅ FIX: Make resume file structurally optional instead of failing with a strict 400 block
+        // Make resume file structurally optional instead of failing with a strict 400 block
         let resumeText = "";
         if (req.file) {
             // Only execute pdf-parse tracking if a physical resume binary was attached
@@ -34,12 +34,13 @@ async function generateInterViewReportController(req, res) {
             jobDescription
         })
 
-        // Save structured report to database
+        // ✅ FIX: Explicitly pass a 'title' field to satisfy the strict Mongoose validator
         const interviewReport = await interviewReportModel.create({
             user: req.user.id,
             resume: resumeText,
             selfDescription,
             jobDescription,
+            title: interViewReportByAi.title || interViewReportByAi.jobTitle || jobDescription.split('\n')[0].substring(0, 50),
             ...interViewReportByAi
         })
 
