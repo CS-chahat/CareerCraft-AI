@@ -1,4 +1,6 @@
-const pdfParse = require("pdf-parse")
+const pdf = require("pdf-parse");
+// Safely handles both default ES modules and standard commonJS bundles
+const pdfParse = typeof pdf === 'function' ? pdf : pdf.default || require("pdf-parse");
 const { generateInterviewReport, generateResumePdf } = require("../services/ai.service")
 const interviewReportModel = require("../models/interviewReport.model")
 
