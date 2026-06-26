@@ -16,14 +16,15 @@ export const useInterview = () => {
 
     const generateReport = async ({ jobDescription, selfDescription, resumeFile }) => {
         setLoading(true)
-        let response = null
         try {
-            response = await generateInterviewReport({ jobDescription, selfDescription, resumeFile })
+            const response = await generateInterviewReport({ jobDescription, selfDescription, resumeFile })
             
-            // ✅ Safety Check: Only set report if response and interviewReport exist
-            if (response && response.interviewReport) {
-                setReport(response.interviewReport)
-                return response.interviewReport
+            // 🛡️ Normalization fallback block
+            const targetData = response?.interviewReport || response?.data?.interviewReport || response?.data || response;
+            
+            if (targetData) {
+                setReport(targetData)
+                return targetData
             }
         } catch (error) {
             console.error("Hook Error generating report:", error)
@@ -31,22 +32,23 @@ export const useInterview = () => {
         } finally {
             setLoading(false)
         }
-
-        // ✅ FIX: Safely return null if the network request fails, preventing Home.jsx from crashing
         return null
     }
 
-    const getReportById = async (interviewId) => {
+    const getReportById = async (id) => {
         setLoading(true)
-        let response = null
         try {
-            response = await getInterviewReportById(interviewId)
-            if (response && response.interviewReport) {
-                setReport(response.interviewReport)
-                return response.interviewReport
+            const response = await getInterviewReportById(id)
+            
+            // 🛡️ Normalization fallback block to prevent undefined skips
+            const targetData = response?.interviewReport || response?.data?.interviewReport || response?.data || response;
+            
+            if (targetData) {
+                setReport(targetData)
+                return targetData
             }
         } catch (error) {
-            console.error(error)
+            console.error("Error fetching report by ID:", error)
         } finally {
             setLoading(false)
         }
@@ -55,35 +57,37 @@ export const useInterview = () => {
 
     const getReports = async () => {
         setLoading(true)
-        let response = null
         try {
-            response = await getAllInterviewReports()
-            if (response && response.interviewReports) {
-                setReports(response.interviewReports)
-                return response.interviewReports
+            const response = await getAllInterviewReports()
+            
+            // 🛡️ Normalization fallback block
+            const targetList = response?.interviewReports || response?.data?.interviewReports || response?.data || response;
+            
+            if (Array.isArray(targetList)) {
+                setReports(targetList)
+                return targetList
             }
         } catch (error) {
-            console.error(error)
+            console.error("Error fetching all reports:", error)
         } finally {
             setLoading(false)
         }
-
         return []
     }
 
     const getResumePdf = async (interviewReportId) => {
         setLoading(true)
-        let response = null
         try {
-            response = await generateResumePdf({ interviewReportId })
-            if (response) {
-                const url = window.URL.createObjectURL(new Blob([ response ], { type: "application/pdf" }))
+            const response = await generateResumePdf({ interviewReportId })
+            const pdfData = response?.data || response;
+            if (pdfData) {
+                const url = window.URL.createObjectURL(new Blob([ pdfData ], { type: "application/pdf" }))
                 const link = document.createElement("a")
                 link.href = url
                 link.setAttribute("download", `resume_${interviewReportId}.pdf`)
                 document.body.appendChild(link)
                 link.click()
-                document.body.removeChild(link) // Clean up DOM element
+                document.body.removeChild(link)
             }
         }
         catch (error) {
@@ -102,5 +106,4 @@ export const useInterview = () => {
     }, [ interviewId ])
 
     return { loading, report, reports, generateReport, getReportById, getReports, getResumePdf }
-
 }
