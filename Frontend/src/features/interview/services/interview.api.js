@@ -1,4 +1,4 @@
-import api from "../../../services/api"; 
+import api from "@/services/api";
 
 /**
  * @description Service to generate interview report based on user details.
