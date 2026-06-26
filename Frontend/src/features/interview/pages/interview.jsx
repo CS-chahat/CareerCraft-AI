@@ -16,7 +16,7 @@ const QuestionCard = ({ item, index }) => {
         <div className='q-card'>
             <div className='q-card__header' onClick={() => setOpen(o => !o)}>
                 <span className='q-card__index'>Q{index + 1}</span>
-                <p className='q-card__question'>{item.question}</p>
+                <p className='q-card__question'>{item?.question || "No question provided"}</p>
                 <span className={`q-card__chevron ${open ? 'q-card__chevron--open' : ''}`}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
                 </span>
@@ -25,11 +25,11 @@ const QuestionCard = ({ item, index }) => {
                 <div className='q-card__body'>
                     <div className='q-card__section'>
                         <span className='q-card__tag q-card__tag--intention'>Intention</span>
-                        <p>{item.intention}</p>
+                        <p>{item?.intention || "Context analysis missing."}</p>
                     </div>
                     <div className='q-card__section'>
                         <span className='q-card__tag q-card__tag--answer'>Model Answer</span>
-                        <p>{item.answer}</p>
+                        <p>{item?.answer || "Model response pathway omitted."}</p>
                     </div>
                 </div>
             )}
@@ -40,16 +40,16 @@ const QuestionCard = ({ item, index }) => {
 const RoadMapDay = ({ day }) => (
     <div className='roadmap-day'>
         <div className='roadmap-day__header'>
-            <span className='roadmap-day__badge'>Day {day.day}</span>
-            <h3 className='roadmap-day__focus'>{day.focus}</h3>
+            <span className='roadmap-day__badge'>Day {day?.day || 1}</span>
+            <h3 className='roadmap-day__focus'>{day?.focus || "Core Alignment Review"}</h3>
         </div>
         <ul className='roadmap-day__tasks'>
-            {day.tasks.map((task, i) => (
+            {day?.tasks && Array.isArray(day.tasks) ? day.tasks.map((task, i) => (
                 <li key={i}>
                     <span className='roadmap-day__bullet' />
                     {task}
                 </li>
-            ))}
+            )) : <li><span className='roadmap-day__bullet' /> Review targeted conceptual matrices.</li>}
         </ul>
     </div>
 )
@@ -57,8 +57,8 @@ const RoadMapDay = ({ day }) => (
 // ── Main Component ────────────────────────────────────────────────────────────
 const Interview = () => {
     const [ activeNav, setActiveNav ] = useState('technical')
-    const [ downloading, setDownloading ] = useState(false) // Local state for downloading tracker
-    const { report, getReportById, loading, getResumePdf } = useInterview()
+    const [ downloading, setDownloading ] = useState(false) 
+    const { report: rawReport, getReportById, loading, getResumePdf } = useInterview()
     const { interviewId } = useParams()
 
     useEffect(() => {
@@ -78,19 +78,28 @@ const Interview = () => {
         }
     }
 
-    
-// ✅ Fix: Only show full-screen load on initial boot when report doesn't exist yet
-if (!report) {
-    return (
-        <main className='loading-screen'>
-            <h1>Loading your interview plan...</h1>
-        </main>
-    )
-}
+    // ✅ FIX: Extract data document nested fields if wrapped by the Express metadata block
+    const report = rawReport?.interviewReport || rawReport;
 
+    // Show full-screen load until the report payload resolves from your API stream
+    if (!report) {
+        return (
+            <main className='loading-screen'>
+                <h1>Loading your interview plan...</h1>
+            </main>
+        )
+    }
+
+    const matchScoreValue = report?.matchScore !== undefined ? report.matchScore : 0;
     const scoreColor =
-        report.matchScore >= 80 ? 'score--high' :
-            report.matchScore >= 60 ? 'score--mid' : 'score--low'
+        matchScoreValue >= 80 ? 'score--high' :
+        matchScoreValue >= 60 ? 'score--mid' : 'score--low';
+
+    // Defensively map lists to empty arrays to prevent mapping iterations crashes
+    const technicalQuestions = report?.technicalQuestions || [];
+    const behavioralQuestions = report?.behavioralQuestions || [];
+    const preparationPlan = report?.preparationPlan || [];
+    const skillGaps = report?.skillGaps || [];
 
     return (
         <div className='interview-page'>
@@ -128,10 +137,10 @@ if (!report) {
                         <section>
                             <div className='content-header'>
                                 <h2>Technical Questions</h2>
-                                <span className='content-header__count'>{report.technicalQuestions.length} questions</span>
+                                <span className='content-header__count'>{technicalQuestions.length} questions</span>
                             </div>
                             <div className='q-list'>
-                                {report.technicalQuestions.map((q, i) => (
+                                {technicalQuestions.map((q, i) => (
                                     <QuestionCard key={i} item={q} index={i} />
                                 ))}
                             </div>
@@ -142,10 +151,10 @@ if (!report) {
                         <section>
                             <div className='content-header'>
                                 <h2>Behavioral Questions</h2>
-                                <span className='content-header__count'>{report.behavioralQuestions.length} questions</span>
+                                <span className='content-header__count'>{behavioralQuestions.length} questions</span>
                             </div>
                             <div className='q-list'>
-                                {report.behavioralQuestions.map((q, i) => (
+                                {behavioralQuestions.map((q, i) => (
                                     <QuestionCard key={i} item={q} index={i} />
                                 ))}
                             </div>
@@ -156,11 +165,11 @@ if (!report) {
                         <section>
                             <div className='content-header'>
                                 <h2>Preparation Road Map</h2>
-                                <span className='content-header__count'>{report.preparationPlan.length}-day plan</span>
+                                <span className='content-header__count'>{preparationPlan.length}-day plan</span>
                             </div>
                             <div className='roadmap-list'>
-                                {report.preparationPlan.map((day) => (
-                                    <RoadMapDay key={day.day} day={day} />
+                                {preparationPlan.map((day, idx) => (
+                                    <RoadMapDay key={day?.day || idx} day={day} />
                                 ))}
                             </div>
                         </section>
@@ -175,10 +184,12 @@ if (!report) {
                     <div className='match-score'>
                         <p className='match-score__label'>Match Score</p>
                         <div className={`match-score__ring ${scoreColor}`}>
-                            <span className='match-score__value'>{report.matchScore}</span>
+                            <span className='match-score__value'>{matchScoreValue}</span>
                             <span className='match-score__pct'>%</span>
                         </div>
-                        <p className='match-score__sub'>Strong match for this role</p>
+                        <p className='match-score__sub'>
+                            {matchScoreValue >= 75 ? "Strong match for this role" : matchScoreValue >= 50 ? "Moderate alignment track" : "Requires systematic preparation"}
+                        </p>
                     </div>
 
                     <div className='sidebar-divider' />
@@ -187,11 +198,11 @@ if (!report) {
                     <div className='skill-gaps'>
                         <p className='skill-gaps__label'>Skill Gaps</p>
                         <div className='skill-gaps__list'>
-                            {report.skillGaps.map((gap, i) => (
-                                <span key={i} className={`skill-tag skill-tag--${gap.severity}`}>
-                                    {gap.skill}
+                            {skillGaps.length > 0 ? skillGaps.map((gap, i) => (
+                                <span key={i} className={`skill-tag skill-tag--${gap?.severity || 'medium'}`}>
+                                    {gap?.skill || "Focus Concept"}
                                 </span>
-                            ))}
+                            )) : <span className='skill-tag skill-tag--low'>No critical gaps tracked</span>}
                         </div>
                     </div>
                 </aside>
