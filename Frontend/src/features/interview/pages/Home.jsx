@@ -12,9 +12,13 @@ const Home = () => {
 
     const handleGenerateReport = async () => {
         const resumeFile = resumeInputRef.current?.files[0]
-        const data = await generateReport({ jobDescription, selfDescription, resumeFile })
-        if (data && data._id) {
-            navigate(`/interview/${data._id}`)
+        const response = await generateReport({ jobDescription, selfDescription, resumeFile })
+        
+        // ✅ FIX: Unpack the inner data document object to match the backend JSON payload structure
+        const reportData = response?.interviewReport || response;
+
+        if (reportData && reportData._id) {
+            navigate(`/interview/${reportData._id}`)
         }
     }
 
@@ -120,13 +124,12 @@ const Home = () => {
                 </div>
             </div>
 
-            {/* Recent Reports List with Safe Null-Checking */}
+            {/* Recent Reports List */}
             {reports && reports.length > 0 && (
                 <section className='recent-reports'>
                     <h2>My Recent Interview Plans</h2>
                     <ul className='reports-list'>
                         {reports.map((report, idx) => {
-                            // Safety check to bypass any null items returned from a failing backend controller
                             if (!report) return null;
 
                             return (
