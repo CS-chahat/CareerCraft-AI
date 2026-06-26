@@ -2,7 +2,7 @@ import axios from "axios";
 
 // UPDATED: Dynamically checks for the production environment variable or defaults to localhost
 const api = axios.create({
-    baseURL: process.env.REACT_APP_API_BASE_URL || "http://localhost:3000",
+    baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000",
     withCredentials: true,
 })
 
