@@ -1,17 +1,19 @@
 import axios from "axios";
 
-// Your exact configuration
 const API = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'
+  // Fixed for Vite environment variables
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
+  withCredentials: true // Crucial if you are using cookie-parser on the backend
 });
 
 export default API;
 
 // --- AUTH FUNCTIONS ---
+// Added "/api/auth" prefix to match your backend app.js configuration
 
 export async function register({ username, email, password }) {
     try {
-        const response = await API.post("/register", { username, email, password });
+        const response = await API.post("/api/auth/register", { username, email, password });
         return response.data;
     } catch (err) {
         console.error("Register Error:", err);
@@ -21,7 +23,7 @@ export async function register({ username, email, password }) {
 
 export async function login({ email, password }) {
     try {
-        const response = await API.post("/login", { email, password });
+        const response = await API.post("/api/auth/login", { email, password });
         return response.data;
     } catch (err) {
         console.error("Login Error:", err);
@@ -31,7 +33,7 @@ export async function login({ email, password }) {
 
 export async function logout() {
     try {
-        const response = await API.get("/logout");
+        const response = await API.get("/api/auth/logout");
         return response.data;
     } catch (err) {
         console.error("Logout Error:", err);
@@ -41,7 +43,7 @@ export async function logout() {
 
 export async function getMe() {
     try {
-        const response = await API.get("/get-me");
+        const response = await API.get("/api/auth/get-me");
         return response.data;
     } catch (err) {
         throw err; 
@@ -50,11 +52,11 @@ export async function getMe() {
 
 // --- INTERVIEW FUNCTIONS ---
 
-// NEW: This fixes the localhost:3000/api/interview/1 error from your screenshot
 export async function generateInterviewStrategy(payload) {
     try {
-        // Appending /api/interview/1 directly to your baseURL setup
-        const response = await API.post("/api/interview/1", payload);
+        // Your backend already prefixes this with "/api/interview", 
+        // so you only need to post to "/1" or whatever the remaining route parameter is.
+        const response = await API.post("/api/interview/1", payload); 
         return response.data;
     } catch (err) {
         console.error("Interview Generation Error:", err);
