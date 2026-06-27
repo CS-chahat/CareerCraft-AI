@@ -7,7 +7,8 @@
     "install-backend": "cd Backend && npm install",
     "install-frontend": "cd Frontend && npm install",
     "build-frontend": "cd Frontend && npm run build",
-    "build": "npm run install-backend && npm run install-frontend && npm run build-frontend",
+    "chrome-install": "cd Backend && npx puppeteer browsers install chrome",
+    "build": "npm run install-backend && npm run install-frontend && npm run build-frontend && npm run chrome-install",
     "start": "cd Backend && node server.js"
   },
   "keywords": [],
