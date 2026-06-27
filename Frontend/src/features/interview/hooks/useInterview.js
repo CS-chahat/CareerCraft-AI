@@ -85,6 +85,17 @@ export const useInterview = () => {
                 { responseType: "blob" }
             );
 
+            // 🚨 CRITICAL CHECK: If backend sends an error (like 500 JSON), axios with responseType: "blob" wraps it in a blob.
+            // We check the content type to extract the actual text error message instead of saving it as a broken PDF.
+            if (response.data && response.data.type === "application/json") {
+                const textError = await response.data.text();
+                const parsedError = JSON.parse(textError);
+                console.error("❌ Backend PDF Generation Failed:", parsedError);
+                alert(`Backend Error: ${parsedError.message || "Failed to generate resume PDF payload."}`);
+                return;
+            }
+
+            // If it's a real, clean PDF payload binary buffer
             if (response.data) {
                 const url = window.URL.createObjectURL(new Blob([ response.data ], { type: "application/pdf" }))
                 const link = document.createElement("a")
@@ -101,7 +112,7 @@ export const useInterview = () => {
         }
         catch (error) {
             console.error("Error downloading file via binary link generation stream:", error)
-            alert("Failed to download file payload data. Please try again.")
+            alert("Failed to download file payload data. Please check your network connection or server status.")
         } finally {
             setLoading(false)
         }
