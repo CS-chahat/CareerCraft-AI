@@ -1,6 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-const cors = require("cors"); // 1. CORS Package Import kiya
+const cors = require("cors");
 const app = require("./src/app");
 const connectToDB = require("./src/config/database.js");
 const path = require('path');
@@ -8,29 +8,27 @@ const path = require('path');
 // Connect to your database
 connectToDB();
 
-// 2. CORS Policy Configure ki (Yeh frontend aur backend ka connection jodeyga)
+// CORS dynamic configure kiya taaki local aur production dono safe rahein
 app.use(cors({
-    origin: "http://localhost:5173", // Aapke local frontend ka URL
-    credentials: true // Cookies aur auth tokens pass karne ke liye
+    origin: ["http://localhost:5173", "https://careercraft-ai-8v2u.onrender.com"],
+    credentials: true
 }));
 
-// 3. Ek simple health-check/welcome route taaki page direct kholne par blank na dikhe
-app.get("/", (req, res) => {
-    res.status(200).json({ success: true, message: "CareerCraft AI Backend is Live and Connected!" });
+// 🚨 FIXED: Production condition hata di! Ab Render cloud par bhi aapka static frontend load hoga.
+app.use(express.static(path.join(__dirname, '../Frontend/dist')));
+
+// API health check (Optional, internally accessible)
+app.get("/api-status", (req, res) => {
+    res.status(200).json({ success: true, message: "API internal engine is running fine." });
 });
 
-// Wrap Frontend static file distribution logic
-// Only attempts to find and serve the frontend assets if we are working locally.
-if (process.env.NODE_ENV !== "production") {
-    app.use(express.static(path.join(__dirname, '../Frontend/dist')));
-
-    // Catch-all route to handle React Router client-side page loads locally
-    app.get(/.*/, (req, res) => {
-        if (!req.path.startsWith('/interview') && !req.path.startsWith('/api')) {
-            res.sendFile(path.join(__dirname, '../Frontend/dist', 'index.html'));
-        }
-    });
-}
+// Catch-all route to handle React Router page loads everywhere (Local & Render)
+app.get(/.*/, (req, res) => {
+    // Kisi bhi internal backend route ko intercept hone se rokne ke liye
+    if (!req.path.startsWith('/interview') && !req.path.startsWith('/api')) {
+        res.sendFile(path.join(__dirname, '../Frontend/dist', 'index.html'));
+    }
+});
 
 // Start your network port listener
 const PORT = process.env.PORT || 3000;
