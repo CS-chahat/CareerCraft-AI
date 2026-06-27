@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import '../style/interview.scss'
 import { useInterview } from '../hooks/useInterview.js'
 import { useNavigate, useParams } from 'react-router'
+import html2pdf from 'html2pdf.js' // 🔐 1. Client-side browser download compiler package imported
 
 const NAV_ITEMS = [
     { id: 'technical', label: 'Technical Questions', icon: (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>) },
@@ -58,7 +59,7 @@ const RoadMapDay = ({ day }) => (
 const Interview = () => {
     const [ activeNav, setActiveNav ] = useState('technical')
     const [ downloading, setDownloading ] = useState(false) 
-    const { report: rawReport, getReportById, loading, getResumePdf } = useInterview()
+    const { report: rawReport, getReportById, loading } = useInterview()
     const { interviewId } = useParams()
 
     useEffect(() => {
@@ -67,21 +68,39 @@ const Interview = () => {
         }
     }, [ interviewId ])
 
+    // 🚀 FIXED: Dynamic Client-Side Browser PDF Downloader Engine Custom Handler
     const handleDownload = async () => {
         try {
             setDownloading(true)
-            await getResumePdf(interviewId)
+            
+            // Target the unique combined layout area block wrapper inside DOM
+            const element = document.getElementById('resume-content-area');
+
+            if (!element) {
+                alert("Resume document layout view target context missing.");
+                return;
+            }
+
+            // High definition styling and padding mapping bounds configurations
+            const options = {
+                margin:       [12, 12, 12, 12],
+                filename:     `CareerCraft-Strategy-${interviewId}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Programmatically execute direct canvas rendering without any active render container requests
+            await html2pdf().set(options).from(element).save();
         } catch (err) {
-            console.error("Download error:", err)
+            console.error("Local client compiler download error:", err)
         } finally {
             setDownloading(false)
         }
     }
 
-    // ✅ FIX: Extract data document nested fields if wrapped by the Express metadata block
     const report = rawReport?.interviewReport || rawReport;
 
-    // Show full-screen load until the report payload resolves from your API stream
     if (!report) {
         return (
             <main className='loading-screen'>
@@ -95,7 +114,6 @@ const Interview = () => {
         matchScoreValue >= 80 ? 'score--high' :
         matchScoreValue >= 60 ? 'score--mid' : 'score--low';
 
-    // Defensively map lists to empty arrays to prevent mapping iterations crashes
     const technicalQuestions = report?.technicalQuestions || [];
     const behavioralQuestions = report?.behavioralQuestions || [];
     const preparationPlan = report?.preparationPlan || [];
@@ -131,84 +149,89 @@ const Interview = () => {
 
                 <div className='interview-divider' />
 
-                {/* ── Center Content ── */}
-                <main className='interview-content'>
-                    {activeNav === 'technical' && (
-                        <section>
-                            <div className='content-header'>
-                                <h2>Technical Questions</h2>
-                                <span className='content-header__count'>{technicalQuestions.length} questions</span>
-                            </div>
-                            <div className='q-list'>
-                                {technicalQuestions.map((q, i) => (
-                                    <QuestionCard key={i} item={q} index={i} />
-                                ))}
-                            </div>
-                        </section>
-                    )}
+                {/* 🗺️ CRITICAL TARGET AREA: Wrapping center content and sidebar inside a target container ID */}
+                <div id="resume-content-area" style={{ display: 'flex', flex: 1, gap: '1rem', width: '100%' }}>
+                    
+                    {/* ── Center Content ── */}
+                    <main className='interview-content' style={{ flex: 2 }}>
+                        {activeNav === 'technical' && (
+                            <section>
+                                <div className='content-header'>
+                                    <h2>Technical Questions</h2>
+                                    <span className='content-header__count'>{technicalQuestions.length} questions</span>
+                                </div>
+                                <div className='q-list'>
+                                    {technicalQuestions.map((q, i) => (
+                                        <QuestionCard key={i} item={q} index={i} />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
 
-                    {activeNav === 'behavioral' && (
-                        <section>
-                            <div className='content-header'>
-                                <h2>Behavioral Questions</h2>
-                                <span className='content-header__count'>{behavioralQuestions.length} questions</span>
-                            </div>
-                            <div className='q-list'>
-                                {behavioralQuestions.map((q, i) => (
-                                    <QuestionCard key={i} item={q} index={i} />
-                                ))}
-                            </div>
-                        </section>
-                    )}
+                        {activeNav === 'behavioral' && (
+                            <section>
+                                <div className='content-header'>
+                                    <h2>Behavioral Questions</h2>
+                                    <span className='content-header__count'>{behavioralQuestions.length} questions</span>
+                                </div>
+                                <div className='q-list'>
+                                    {behavioralQuestions.map((q, i) => (
+                                        <QuestionCard key={i} item={q} index={i} />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
 
-                    {activeNav === 'roadmap' && (
-                        <section>
-                            <div className='content-header'>
-                                <h2>Preparation Road Map</h2>
-                                <span className='content-header__count'>{preparationPlan.length}-day plan</span>
-                            </div>
-                            <div className='roadmap-list'>
-                                {preparationPlan.map((day, idx) => (
-                                    <RoadMapDay key={day?.day || idx} day={day} />
-                                ))}
-                            </div>
-                        </section>
-                    )}
-                </main>
+                        {activeNav === 'roadmap' && (
+                            <section>
+                                <div className='content-header'>
+                                    <h2>Preparation Road Map</h2>
+                                    <span className='content-header__count'>{preparationPlan.length}-day plan</span>
+                                </div>
+                                <div className='roadmap-list'>
+                                    {preparationPlan.map((day, idx) => (
+                                        <RoadMapDay key={day?.day || idx} day={day} />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+                    </main>
 
-                <div className='interview-divider' />
+                    <div className='interview-divider' />
 
-                {/* ── Right Sidebar ── */}
-                <aside className='interview-sidebar'>
-                    {/* Match Score */}
-                    <div className='match-score'>
-                        <p className='match-score__label'>Match Score</p>
-                        <div className={`match-score__ring ${scoreColor}`}>
-                            <span className='match-score__value'>{matchScoreValue}</span>
-                            <span className='match-score__pct'>%</span>
+                    {/* ── Right Sidebar ── */}
+                    <aside className='interview-sidebar' style={{ flex: 1 }}>
+                        {/* Match Score */}
+                        <div className='match-score'>
+                            <p className='match-score__label'>Match Score</p>
+                            <div className={`match-score__ring ${scoreColor}`}>
+                                <span className='match-score__value'>{matchScoreValue}</span>
+                                <span className='match-score__pct'>%</span>
+                            </div>
+                            <p className='match-score__sub'>
+                                {matchScoreValue >= 75 ? "Strong match for this role" : matchScoreValue >= 50 ? "Moderate alignment track" : "Requires systematic preparation"}
+                            </p>
                         </div>
-                        <p className='match-score__sub'>
-                            {matchScoreValue >= 75 ? "Strong match for this role" : matchScoreValue >= 50 ? "Moderate alignment track" : "Requires systematic preparation"}
-                        </p>
-                    </div>
 
-                    <div className='sidebar-divider' />
+                        <div className='sidebar-divider' />
 
-                    {/* Skill Gaps */}
-                    <div className='skill-gaps'>
-                        <p className='skill-gaps__label'>Skill Gaps</p>
-                        <div className='skill-gaps__list'>
-                            {skillGaps.length > 0 ? skillGaps.map((gap, i) => (
-                                <span key={i} className={`skill-tag skill-tag--${gap?.severity || 'medium'}`}>
-                                    {gap?.skill || "Focus Concept"}
-                                </span>
-                            )) : <span className='skill-tag skill-tag--low'>No critical gaps tracked</span>}
+                        {/* Skill Gaps */}
+                        <div className='skill-gaps'>
+                            <p className='skill-gaps__label'>Skill Gaps</p>
+                            <div className='skill-gaps__list'>
+                                {skillGaps.length > 0 ? skillGaps.map((gap, i) => (
+                                    <span key={i} className={`skill-tag skill-tag--${gap?.severity || 'medium'}`}>
+                                        {gap?.skill || "Focus Concept"}
+                                    </span>
+                                )) : <span className='skill-tag skill-tag--low'>No critical gaps tracked</span>}
+                            </div>
                         </div>
-                    </div>
-                </aside>
+                    </aside>
+                </div>
+
             </div>
         </div>
     )
 }
 
-export default Interview
+export default Interview;
