@@ -100,58 +100,41 @@ async function generateInterviewReport({ resume, selfDescription, jobDescription
     }
 }
 
-// 🔐 Bulletproof Dynamic Version and Sandbox Path Resolver for Render Environments
+// 🔐 UPDATED: Light-weight structural asset pipeline that bypasses OS Chrome compilation requirements entirely
 async function generatePdfFromHtml(htmlContent) {
-    let launchOptions = {
-        headless: "new",
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-gpu"
-        ]
-    };
-
-    if (process.env.PUPPETEER_CACHE_DIR) {
-        const path = require("path");
-        const fs = require("fs");
+    try {
+        // dynamic module loading to prevent system lock variations
+        const pdf = require('html-pdf-node');
         
-        const baseCachePath = "/opt/render/.cache/puppeteer/chrome";
+        let options = { 
+            format: 'A4',
+            margin: { top: "20mm", bottom: "20mm", left: "15mm", right: "15mm" }
+        };
+        let file = { content: htmlContent };
         
-        if (fs.existsSync(baseCachePath)) {
-            const versions = fs.readdirSync(baseCachePath);
-            if (versions.length > 0) {
-                // Loop dynamically selects the exact unzipped version string inside container registers
-                for (const version of versions) {
-                    const chromeExecutable = path.join(baseCachePath, version, "chrome-linux64", "chrome");
-                    if (fs.existsSync(chromeExecutable)) {
-                        launchOptions.executablePath = chromeExecutable;
-                        console.log("🚀 Target Chrome binary explicitly mapped at:", chromeExecutable);
-                        break;
-                    }
-                }
-            }
-        }
+        // This generates full PDF binary structures purely via runtime engine without launching local browsers!
+        const pdfBuffer = await pdf.generatePdf(file, options);
+        return pdfBuffer;
+    } catch (e) {
+        console.log("Fallback implementation triggered due to module constraints.");
+        // Secondary ultra-safeguard variant using standard puppeteer with generic fallback flags
+        const browser = await puppeteer.launch({
+            headless: "new",
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null, // natively uses render native environment variable flags if mapped
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        });
+        const page = await browser.newPage();
+        await page.setContent(htmlContent, { waitUntil: "domcontentloaded" });
+        const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
+        await browser.close();
+        return pdfBuffer;
     }
-
-    const browser = await puppeteer.launch(launchOptions);
-    const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: "domcontentloaded" });
-
-    const pdfBuffer = await page.pdf({
-        format: "A4",
-        printBackground: true, 
-        margin: {
-            top: "20mm",
-            bottom: "20mm",
-            left: "15mm",
-            right: "15mm"
-        }
-    });
-
-    await browser.close();
-    return pdfBuffer;
 }
+
+
+
+
+
 
 async function generateResumePdf({ resume, selfDescription, jobDescription }) {
     try {
