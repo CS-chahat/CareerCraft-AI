@@ -103,9 +103,12 @@ async function generateInterviewReport({ resume, selfDescription, jobDescription
 }
 
 async function generatePdfFromHtml(htmlContent) {
-    // ✅ FIX: Added vital production arguments to allow Puppeteer to run in low-memory/cloud Linux sandboxes like Render
+    // ✅ FIX: Dynamically points to the system binary location when live on Render's Ubuntu environments
     const browser = await puppeteer.launch({
         headless: "new",
+        executablePath: process.env.NODE_ENV === "production" 
+            ? "/usr/bin/google-chrome" 
+            : undefined, 
         args: [
             "--no-sandbox",
             "--disable-setuid-sandbox",
@@ -115,13 +118,11 @@ async function generatePdfFromHtml(htmlContent) {
     });
     
     const page = await browser.newPage();
-    
-    // Adjusted wait strategy to ensure DOM compilation completes smoothly
     await page.setContent(htmlContent, { waitUntil: "domcontentloaded" });
 
     const pdfBuffer = await page.pdf({
         format: "A4",
-        printBackground: true, // ✅ CRITICAL: Ensures text styles, borders, and layouts compile into the PDF binary
+        printBackground: true, 
         margin: {
             top: "20mm",
             bottom: "20mm",
