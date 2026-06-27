@@ -94,31 +94,44 @@ async function generateInterviewReport({ resume, selfDescription, jobDescription
             }
         });
 
-        // Safe extraction layer for the standard @google/genai SDK response payload
         const responseText = response.text || response.candidates[0].content.parts[0].text;
         return JSON.parse(responseText);
     } catch (error) {
         console.error("❌ Error generating interview report inside AI service:", error);
-        throw error; // Throwing ensure it hits your controller's catch block instead of silently failing
+        throw error;
     }
 }
 
 async function generatePdfFromHtml(htmlContent) {
-    const browser = await puppeteer.launch()
+    // ✅ FIX: Added vital production arguments to allow Puppeteer to run in low-memory/cloud Linux sandboxes like Render
+    const browser = await puppeteer.launch({
+        headless: "new",
+        args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu"
+        ]
+    });
+    
     const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: "networkidle0" })
+    
+    // Adjusted wait strategy to ensure DOM compilation completes smoothly
+    await page.setContent(htmlContent, { waitUntil: "domcontentloaded" });
 
     const pdfBuffer = await page.pdf({
-        format: "A4", margin: {
+        format: "A4",
+        printBackground: true, // ✅ CRITICAL: Ensures text styles, borders, and layouts compile into the PDF binary
+        margin: {
             top: "20mm",
             bottom: "20mm",
             left: "15mm",
             right: "15mm"
         }
-    })
+    });
 
-    await browser.close()
-    return pdfBuffer
+    await browser.close();
+    return pdfBuffer;
 }
 
 async function generateResumePdf({ resume, selfDescription, jobDescription }) {
