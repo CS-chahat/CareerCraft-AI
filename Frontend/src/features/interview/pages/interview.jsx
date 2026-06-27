@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import '../style/interview.scss'
 import { useInterview } from '../hooks/useInterview.js'
 import { useNavigate, useParams } from 'react-router'
-import html2pdf from 'html2pdf.js' // 🔐 1. Client-side browser download compiler package imported
+import html2pdf from 'html2pdf.js' // 🔐 Client-side browser download compiler package imported
 
 const NAV_ITEMS = [
     { id: 'technical', label: 'Technical Questions', icon: (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>) },
@@ -68,30 +68,31 @@ const Interview = () => {
         }
     }, [ interviewId ])
 
-    // 🚀 FIXED: Dynamic Client-Side Browser PDF Downloader Engine Custom Handler
+    // ✅ FIXED: Direct serverless clean resume compiler loop logic
     const handleDownload = async () => {
         try {
             setDownloading(true)
             
-            // Target the unique combined layout area block wrapper inside DOM
-            const element = document.getElementById('resume-content-area');
+            // Raw internal check logic definitions for report documents payload mapping
+            const reportData = rawReport?.interviewReport || rawReport;
+            const resumeRawHtml = reportData?.resumeHtml || reportData?.html;
 
-            if (!element) {
-                alert("Resume document layout view target context missing.");
+            if (!resumeRawHtml) {
+                alert("Resume document layout view target context missing from AI database registry.");
                 return;
             }
 
-            // High definition styling and padding mapping bounds configurations
+            // High definition styling parameters targeting a neat professional clean print mapping
             const options = {
-                margin:       [12, 12, 12, 12],
-                filename:     `CareerCraft-Strategy-${interviewId}.pdf`,
+                margin:       [15, 15, 15, 15],
+                filename:     `CareerCraft-Resume-${interviewId}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true, logging: false },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // Programmatically execute direct canvas rendering without any active render container requests
-            await html2pdf().set(options).from(element).save();
+            // 🚀 Directly compile raw back-end string data bypassing physical portal screen components entirely!
+            await html2pdf().set(options).from(resumeRawHtml).save();
         } catch (err) {
             console.error("Local client compiler download error:", err)
         } finally {
@@ -149,9 +150,7 @@ const Interview = () => {
 
                 <div className='interview-divider' />
 
-                {/* 🗺️ CRITICAL TARGET AREA: Wrapping center content and sidebar inside a target container ID */}
-                <div id="resume-content-area" style={{ display: 'flex', flex: 1, gap: '1rem', width: '100%' }}>
-                    
+                <div style={{ display: 'flex', flex: 1, gap: '1rem', width: '100%' }}>
                     {/* ── Center Content ── */}
                     <main className='interview-content' style={{ flex: 2 }}>
                         {activeNav === 'technical' && (
