@@ -2,6 +2,7 @@ import { getAllInterviewReports, generateInterviewReport, getInterviewReportById
 import { useContext, useEffect } from "react"
 import { InterviewContext } from "../interview.context"
 import { useParams } from "react-router"
+import axios from "axios" // ✅ Added for direct blob response tracking overrides
 
 export const useInterview = () => {
 
@@ -78,20 +79,29 @@ export const useInterview = () => {
     const getResumePdf = async (interviewReportId) => {
         setLoading(true)
         try {
-            const response = await generateResumePdf({ interviewReportId })
-            const pdfData = response?.data || response;
-            if (pdfData) {
-                const url = window.URL.createObjectURL(new Blob([ pdfData ], { type: "application/pdf" }))
+            // 🛡️ Explicitly pull the file stream using an override config to handle binary data buffers
+            const response = await axios.get(
+                `https://careercraft-ai-8v2u.onrender.com/interview/resume/${interviewReportId}`,
+                { responseType: "blob" }
+            );
+
+            if (response.data) {
+                const url = window.URL.createObjectURL(new Blob([ response.data ], { type: "application/pdf" }))
                 const link = document.createElement("a")
                 link.href = url
                 link.setAttribute("download", `resume_${interviewReportId}.pdf`)
                 document.body.appendChild(link)
-                link.click()
+                
+                link.click() // ✅ Triggers browser file compilation manager system
+                
+                // Cleanup browser DOM elements and object tracking instances
                 document.body.removeChild(link)
+                window.URL.revokeObjectURL(url)
             }
         }
         catch (error) {
-            console.error(error)
+            console.error("Error downloading file via binary link generation stream:", error)
+            alert("Failed to download file payload data. Please try again.")
         } finally {
             setLoading(false)
         }
