@@ -47,8 +47,14 @@ async function generateInterViewReportController(req, res) {
             try {
                 interViewReportByAi = JSON.parse(interViewReportByAi);
             } catch (e) {
-                console.error("AI response failed to parse as JSON");
+                console.error("❌ AI response failed to parse as JSON string:", e);
+                throw new Error("AI returned data in an unparsable string format.");
             }
+        }
+
+        // 🚨 CRITICAL VALIDATION: Ensure the AI actually returned data before creating DB entry
+        if (!interViewReportByAi || (!interViewReportByAi.matchScore && interViewReportByAi.matchScore !== 0)) {
+            throw new Error("AI Service returned an invalid or empty report payload.");
         }
 
         const fallbackTitle = jobDescription.split('\n')[0].replace(/[^\w\s-]/g, '').trim().substring(0, 50) || "Custom Interview Strategy";
@@ -61,11 +67,11 @@ async function generateInterViewReportController(req, res) {
             selfDescription,
             jobDescription,
             title: extractedTitle,
-            matchScore: interViewReportByAi?.matchScore || 0,
-            technicalQuestions: interViewReportByAi?.technicalQuestions || [],
-            behavioralQuestions: interViewReportByAi?.behavioralQuestions || [],
-            skillGaps: interViewReportByAi?.skillGaps || [],
-            preparationPlan: interViewReportByAi?.preparationPlan || []
+            matchScore: interViewReportByAi.matchScore,
+            technicalQuestions: interViewReportByAi.technicalQuestions || [],
+            behavioralQuestions: interViewReportByAi.behavioralQuestions || [],
+            skillGaps: interViewReportByAi.skillGaps || [],
+            preparationPlan: interViewReportByAi.preparationPlan || []
         })
 
         return res.status(201).json({
@@ -74,7 +80,7 @@ async function generateInterViewReportController(req, res) {
         })
 
     } catch (error) {
-        console.error("Error in generateInterViewReportController final execution branch:", error)
+        console.error("❌ Error in generateInterViewReportController final execution branch:", error)
         return res.status(500).json({
             message: "Failed to generate interview report.",
             error: error.message || "Internal Server Error"
@@ -82,9 +88,42 @@ async function generateInterViewReportController(req, res) {
     }
 }
 
-// Keep getInterviewReportByIdController, getAllInterviewReportsController, and generateResumePdfController exactly as they are...
-async function getInterviewReportByIdController(req, res) { try { const { interviewId } = req.params; const interviewReport = await interviewReportModel.findOne({ _id: interviewId, user: req.user.id }); if (!interviewReport) return res.status(404).json({ message: "Interview report not found." }); return res.status(200).json({ message: "Interview report fetched successfully.", interviewReport }); } catch (error) { return res.status(500).json({ message: "Internal server error" }); } }
-async function getAllInterviewReportsController(req, res) { try { const interviewReports = await interviewReportModel.find({ user: req.user.id }).sort({ createdAt: -1 }).select("-resume -selfDescription -jobDescription -__v -technicalQuestions -behavioralQuestions -skillGaps -preparationPlan"); return res.status(200).json({ message: "Interview reports fetched successfully.", interviewReports }); } catch (error) { return res.status(500).json({ message: "Internal server error" }); } }
-async function generateResumePdfController(req, res) { try { const { interviewReportId } = req.params; const interviewReport = await interviewReportModel.findById(interviewReportId); if (!interviewReport) return res.status(404).json({ message: "Interview report not found." }); const pdfBuffer = await generateResumePdf({ resume: interviewReport.resume, jobDescription: interviewReport.jobDescription, selfDescription: interviewReport.selfDescription }); res.set({ "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename=resume_${interviewReportId}.pdf` }); return res.send(pdfBuffer); } catch (error) { return res.status(500).json({ message: "Failed to generate resume PDF payload." }); } }
+async function getInterviewReportByIdController(req, res) { 
+    try { 
+        const { interviewId } = req.params; 
+        const interviewReport = await interviewReportModel.findOne({ _id: interviewId, user: req.user.id }); 
+        if (!interviewReport) return res.status(404).json({ message: "Interview report not found." }); 
+        return res.status(200).json({ message: "Interview report fetched successfully.", interviewReport }); 
+    } catch (error) { 
+        return res.status(500).json({ message: "Internal server error" }); 
+    } 
+}
 
-module.exports = { generateInterViewReportController, getInterviewReportByIdController, getAllInterviewReportsController, generateResumePdfController }
+async function getAllInterviewReportsController(req, res) { 
+    try { 
+        const interviewReports = await interviewReportModel.find({ user: req.user.id }).sort({ createdAt: -1 }).select("-resume -selfDescription -jobDescription -__v -technicalQuestions -behavioralQuestions -skillGaps -preparationPlan"); 
+        return res.status(200).json({ message: "Interview reports fetched successfully.", interviewReports }); 
+    } catch (error) { 
+        return res.status(500).json({ message: "Internal server error" }); 
+    } 
+}
+
+async function generateResumePdfController(req, res) { 
+    try { 
+        const { interviewReportId } = req.params; 
+        const interviewReport = await interviewReportModel.findById(interviewReportId); 
+        if (!interviewReport) return res.status(404).json({ message: "Interview report not found." }); 
+        const pdfBuffer = await generateResumePdf({ resume: interviewReport.resume, jobDescription: interviewReport.jobDescription, selfDescription: interviewReport.selfDescription }); 
+        res.set({ "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename=resume_${interviewReportId}.pdf` }); 
+        return res.send(pdfBuffer); 
+    } catch (error) { 
+        return res.status(500).json({ message: "Failed to generate resume PDF payload." }); 
+    } 
+}
+
+module.exports = { 
+    generateInterViewReportController, 
+    getInterviewReportByIdController, 
+    getAllInterviewReportsController, 
+    generateResumePdfController 
+}
