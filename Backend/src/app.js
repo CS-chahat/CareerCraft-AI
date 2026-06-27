@@ -27,7 +27,12 @@ app.use(cors({
 
 const interviewRouter = require("./routes/interview.routes");
 const authRouter = require("./routes/auth.routes");
+
+// Standard Prefixed API Endpoints
 app.use("/api/auth", authRouter);
 app.use("/api/interview", interviewRouter);
+
+// 🛡️ FALLBACK ALIAS: Direct mount to capture requests missing the /api prefix from the frontend hook configuration
+app.use("/interview", interviewRouter);
 
 module.exports = app;
