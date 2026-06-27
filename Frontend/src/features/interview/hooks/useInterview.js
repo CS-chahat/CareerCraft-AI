@@ -111,8 +111,20 @@ export const useInterview = () => {
             }
         }
         catch (error) {
-            console.error("Error downloading file via binary link generation stream:", error)
-            alert("Failed to download file payload data. Please check your network connection or server status.")
+            console.error("Error downloading file via binary link generation stream:", error);
+            
+            // ✅ IMPROVED FIX: If the response failed, look deep into the axios error payload to extract the actual text reason
+            if (error.response?.data instanceof Blob) {
+                const errorText = await error.response.data.text();
+                try {
+                    const parsedError = JSON.parse(errorText);
+                    alert(`Download Error: ${parsedError.message || "Server Error"}`);
+                } catch {
+                    alert(`Download Error: ${errorText || error.message}`);
+                }
+            } else {
+                alert(`Download Error: ${error.response?.data?.message || error.message}`);
+            }
         } finally {
             setLoading(false)
         }
