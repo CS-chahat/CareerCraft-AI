@@ -112,12 +112,30 @@ async function generateResumePdfController(req, res) {
     try { 
         const { interviewReportId } = req.params; 
         const interviewReport = await interviewReportModel.findById(interviewReportId); 
-        if (!interviewReport) return res.status(404).json({ message: "Interview report not found." }); 
-        const pdfBuffer = await generateResumePdf({ resume: interviewReport.resume, jobDescription: interviewReport.jobDescription, selfDescription: interviewReport.selfDescription }); 
-        res.set({ "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename=resume_${interviewReportId}.pdf` }); 
+        if (!interviewReport) {
+            return res.status(404).json({ message: "Interview report not found in system storage." }); 
+        }
+
+        // Run binary creation service
+        const pdfBuffer = await generateResumePdf({ 
+            resume: interviewReport.resume, 
+            jobDescription: interviewReport.jobDescription, 
+            selfDescription: interviewReport.selfDescription 
+        }); 
+
+        res.set({ 
+            "Content-Type": "application/pdf", 
+            "Content-Disposition": `attachment; filename=resume_${interviewReportId}.pdf` 
+        }); 
         return res.send(pdfBuffer); 
     } catch (error) { 
-        return res.status(500).json({ message: "Failed to generate resume PDF payload." }); 
+        // ✅ FIX: Log out the exact error stack trace to your Render backend stream terminal
+        console.error("❌ CRITICAL PDF COMPILER CRASH DETECTED:", error);
+        
+        // Return JSON with the exact failure message so our custom frontend hook can catch it
+        return res.status(500).json({ 
+            message: `Failed to compile PDF asset: ${error.message || "Unknown internal compiler crash"}` 
+        }); 
     } 
 }
 
