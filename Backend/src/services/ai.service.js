@@ -100,7 +100,7 @@ async function generateInterviewReport({ resume, selfDescription, jobDescription
     }
 }
 
-// 🔐 Setup explicit isolated runtime path matching for Puppeteer on Render
+// 🔐 Bulletproof Dynamic Version and Sandbox Path Resolver for Render Environments
 async function generatePdfFromHtml(htmlContent) {
     let launchOptions = {
         headless: "new",
@@ -121,10 +121,14 @@ async function generatePdfFromHtml(htmlContent) {
         if (fs.existsSync(baseCachePath)) {
             const versions = fs.readdirSync(baseCachePath);
             if (versions.length > 0) {
-                const chromeExecutable = path.join(baseCachePath, versions[0], "chrome-linux64", "chrome");
-                if (fs.existsSync(chromeExecutable)) {
-                    launchOptions.executablePath = chromeExecutable;
-                    console.log("🚀 Target Chrome binary explicitly mapped at:", chromeExecutable);
+                // Loop dynamically selects the exact unzipped version string inside container registers
+                for (const version of versions) {
+                    const chromeExecutable = path.join(baseCachePath, version, "chrome-linux64", "chrome");
+                    if (fs.existsSync(chromeExecutable)) {
+                        launchOptions.executablePath = chromeExecutable;
+                        console.log("🚀 Target Chrome binary explicitly mapped at:", chromeExecutable);
+                        break;
+                    }
                 }
             }
         }
