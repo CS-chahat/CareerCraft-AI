@@ -39,10 +39,11 @@ interviewRouter.get("/report/:interviewId", authMiddleware.authUser, interviewCo
 interviewRouter.get("/", authMiddleware.authUser, interviewController.getAllInterviewReportsController)
 
 /**
- * @route GET /api/interview/resume/pdf
+ * @route GET /interview/resume/:interviewReportId
  * @description generate resume pdf on the basis of user self description, resume content and job description.
  * @access private
  */
-interviewRouter.post("/resume/pdf/:interviewReportId", authMiddleware.authUser, interviewController.generateResumePdfController)
+// ✅ FIX: Changed to .get and path updated to match frontend exactly
+interviewRouter.get("/resume/:interviewReportId", authMiddleware.authUser, interviewController.generateResumePdfController)
 
 module.exports = interviewRouter
