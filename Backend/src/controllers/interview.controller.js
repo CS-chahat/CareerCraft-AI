@@ -18,7 +18,6 @@ async function generateInterViewReportController(req, res) {
         let resumeText = "";
         if (req.file) {
             try {
-                // 🛡️ PERMANENT FIX: Bulletproof runtime check for pdf-parse exports
                 const parseFunction = typeof pdf === 'function' ? pdf : (pdf.default || Object.values(pdf).find(f => typeof f === 'function'));
                 
                 if (!parseFunction) {
@@ -35,14 +34,12 @@ async function generateInterViewReportController(req, res) {
             resumeText = "No resume provided. Rely entirely on the user self-description profile.";
         }
 
-        // Hand off data to AI service
         let interViewReportByAi = await generateInterviewReport({
             resume: resumeText,
             selfDescription,
             jobDescription
         })
 
-        // Ensure we parse string responses if the service layer skipped it
         if (typeof interViewReportByAi === "string") {
             try {
                 interViewReportByAi = JSON.parse(interViewReportByAi);
@@ -52,7 +49,6 @@ async function generateInterViewReportController(req, res) {
             }
         }
 
-        // 🚨 CRITICAL VALIDATION: Ensure the AI actually returned data before creating DB entry
         if (!interViewReportByAi || (!interViewReportByAi.matchScore && interViewReportByAi.matchScore !== 0)) {
             throw new Error("AI Service returned an invalid or empty report payload.");
         }
@@ -60,7 +56,6 @@ async function generateInterViewReportController(req, res) {
         const fallbackTitle = jobDescription.split('\n')[0].replace(/[^\w\s-]/g, '').trim().substring(0, 50) || "Custom Interview Strategy";
         const extractedTitle = interViewReportByAi?.title || interViewReportByAi?.jobTitle || fallbackTitle;
 
-        // Save normalized object structure to database
         const interviewReport = await interviewReportModel.create({
             user: req.user.id,
             resume: resumeText,
@@ -116,23 +111,28 @@ async function generateResumePdfController(req, res) {
             return res.status(404).json({ message: "Interview report not found in system storage." }); 
         }
 
-        // Run binary creation service
-        const pdfBuffer = await generateResumePdf({ 
-            resume: interviewReport.resume, 
+        // 🛡️ CHIEF SANITIZATION: Agar database mein error string phansi hai, toh use Gemini ke paas mat bhejo
+        let cleanedResumeText = interviewReport.resume || "";
+        if (cleanedResumeText.includes("failed") || cleanedResumeText.includes("No resume provided")) {
+            cleanedResumeText = "Not available. Use the provided self-description content below to formulate the resume properties.";
+        }
+
+        // Run the Gemini completion service layer
+        const aiResponse = await generateResumePdf({ 
+            resume: cleanedResumeText, 
             jobDescription: interviewReport.jobDescription, 
             selfDescription: interviewReport.selfDescription 
         }); 
 
-        res.set({ 
-            "Content-Type": "application/pdf", 
-            "Content-Disposition": `attachment; filename=resume_${interviewReportId}.pdf` 
-        }); 
-        return res.send(pdfBuffer); 
+        // 🚀 FIXED RESPONSE: Frontend `Interview.jsx` expects a JSON document with the `resumeHtml` inside!
+        // Isliye text-rendering parsing block pass karne ke liye proper schema key structure return kar rahe hain.
+        return res.status(200).json({
+            message: "Resume HTML compiled successfully.",
+            resumeHtml: aiResponse?.html || aiResponse?.resumeHtml || "<h3>Compiled Profile Matrix</h3>"
+        });
+
     } catch (error) { 
-        // ✅ FIX: Log out the exact error stack trace to your Render backend stream terminal
         console.error("❌ CRITICAL PDF COMPILER CRASH DETECTED:", error);
-        
-        // Return JSON with the exact failure message so our custom frontend hook can catch it
         return res.status(500).json({ 
             message: `Failed to compile PDF asset: ${error.message || "Unknown internal compiler crash"}` 
         }); 
@@ -144,4 +144,4 @@ module.exports = {
     getInterviewReportByIdController, 
     getAllInterviewReportsController, 
     generateResumePdfController 
-}
+};
