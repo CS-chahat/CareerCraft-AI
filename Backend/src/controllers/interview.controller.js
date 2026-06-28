@@ -3,7 +3,7 @@ const { generateInterviewReport, generateResumePdf } = require("../services/ai.s
 const interviewReportModel = require("../models/interviewReport.model")
 
 /**
- * @description Highly resilient controller to generate interview reports with bulletproof fallbacks.
+ * @description Resilient controller to generate interview reports with isolated resume compilation.
  */
 async function generateInterViewReportController(req, res) {
     try {
@@ -14,7 +14,6 @@ async function generateInterViewReportController(req, res) {
             })
         }
 
-        // Make resume file structurally optional
         let resumeText = "";
         if (req.file) {
             try {
@@ -34,6 +33,7 @@ async function generateInterViewReportController(req, res) {
             resumeText = "No resume provided. Rely entirely on the user self-description profile.";
         }
 
+        // 1. Generate Interview Report
         let interViewReportByAi = await generateInterviewReport({
             resume: resumeText,
             selfDescription,
@@ -53,9 +53,32 @@ async function generateInterViewReportController(req, res) {
             throw new Error("AI Service returned an invalid or empty report payload.");
         }
 
+        // 2. 🚀 ISOLATED RESUME GENERATION: Wrapped inside its own try-catch to prevent 500 crashes
+        let resumeHtmlString = "";
+        try {
+            let cleanedResumeText = resumeText;
+            if (cleanedResumeText.includes("failed") || cleanedResumeText.includes("No resume provided")) {
+                cleanedResumeText = "Not available. Use the provided self-description content below.";
+            }
+
+            console.log("⏳ Attempting to compile tailored resume HTML...");
+            const aiResumeResponse = await generateResumePdf({ 
+                resume: cleanedResumeText, 
+                jobDescription, 
+                selfDescription 
+            });
+            
+            resumeHtmlString = aiResumeResponse?.html || aiResumeResponse?.resumeHtml || "";
+        } catch (resumeError) {
+            console.error("⚠️ Resume AI compilation timed out or failed. Applying dynamic fallback text to keep server alive:", resumeError.message);
+            // Seamless dynamic backup so the application never crashes
+            resumeHtmlString = `<h3>Tailored Professional Profile</h3><p>${selfDescription}</p>`;
+        }
+
         const fallbackTitle = jobDescription.split('\n')[0].replace(/[^\w\s-]/g, '').trim().substring(0, 50) || "Custom Interview Strategy";
         const extractedTitle = interViewReportByAi?.title || interViewReportByAi?.jobTitle || fallbackTitle;
 
+        // 3. Save to database securely
         const interviewReport = await interviewReportModel.create({
             user: req.user.id,
             resume: resumeText,
@@ -66,7 +89,8 @@ async function generateInterViewReportController(req, res) {
             technicalQuestions: interViewReportByAi.technicalQuestions || [],
             behavioralQuestions: interViewReportByAi.behavioralQuestions || [],
             skillGaps: interViewReportByAi.skillGaps || [],
-            preparationPlan: interViewReportByAi.preparationPlan || []
+            preparationPlan: interViewReportByAi.preparationPlan || [],
+            resumeHtml: resumeHtmlString || "<h3>Compiled Profile Matrix</h3>"
         })
 
         return res.status(201).json({
@@ -111,24 +135,9 @@ async function generateResumePdfController(req, res) {
             return res.status(404).json({ message: "Interview report not found in system storage." }); 
         }
 
-        // 🛡️ CHIEF SANITIZATION: Agar database mein error string phansi hai, toh use Gemini ke paas mat bhejo
-        let cleanedResumeText = interviewReport.resume || "";
-        if (cleanedResumeText.includes("failed") || cleanedResumeText.includes("No resume provided")) {
-            cleanedResumeText = "Not available. Use the provided self-description content below to formulate the resume properties.";
-        }
-
-        // Run the Gemini completion service layer
-        const aiResponse = await generateResumePdf({ 
-            resume: cleanedResumeText, 
-            jobDescription: interviewReport.jobDescription, 
-            selfDescription: interviewReport.selfDescription 
-        }); 
-
-        // 🚀 FIXED RESPONSE: Frontend `Interview.jsx` expects a JSON document with the `resumeHtml` inside!
-        // Isliye text-rendering parsing block pass karne ke liye proper schema key structure return kar rahe hain.
         return res.status(200).json({
             message: "Resume HTML compiled successfully.",
-            resumeHtml: aiResponse?.html || aiResponse?.resumeHtml || "<h3>Compiled Profile Matrix</h3>"
+            resumeHtml: interviewReport.resumeHtml || "<h3>Compiled Profile Matrix</h3>"
         });
 
     } catch (error) { 
