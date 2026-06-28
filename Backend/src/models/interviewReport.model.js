@@ -107,6 +107,11 @@ const interviewReportSchema = new mongoose.Schema({
     title: {
         type: String,
         default: "Custom Interview Strategy Plan" // Guard option in case AI skips the key
+    },
+    // 🚀 CRITICAL FIX: Registered missing field in strict schema layer to prevent 500 runtime crash
+    resumeHtml: {
+        type: String,
+        default: ""
     }
 }, {
     timestamps: true
