@@ -8,6 +8,8 @@ const NAV_ITEMS = [
     { id: 'technical', label: 'Technical Questions', icon: (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>) },
     { id: 'behavioral', label: 'Behavioral Questions', icon: (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>) },
     { id: 'roadmap', label: 'Road Map', icon: (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg>) },
+    // 📄 ADDED: Dedicated Navigation option for previewing the AI-generated resume template
+    { id: 'resume', label: 'Tailored Resume', icon: (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>) },
 ]
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -68,69 +70,59 @@ const Interview = () => {
         }
     }, [ interviewId ])
 
-    
-
-
     const handleDownload = async () => {
-    try {
-        setDownloading(true);
-        
-        const reportData = rawReport?.interviewReport || rawReport;
-        let resumeRawHtml = reportData?.resumeHtml || reportData?.html || reportData?.generatedHtml || reportData?.resume;
+        try {
+            setDownloading(true);
+            
+            const reportData = rawReport?.interviewReport || rawReport;
+            let resumeRawHtml = reportData?.resumeHtml || reportData?.html || reportData?.generatedHtml || reportData?.resume;
 
-        if (!resumeRawHtml) {
-            alert("Resume document layout view target context missing from AI database registry.");
-            return;
+            if (!resumeRawHtml) {
+                alert("Resume document layout view target context missing from AI database registry.");
+                return;
+            }
+
+            // Wrap inside a clean HTML skeleton to enforce strict page styling and colors
+            if (!resumeRawHtml.includes('<html')) {
+                resumeRawHtml = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="utf-8">
+                        <style>
+                            body { font-family: 'Arial', sans-serif; color: #333; margin: 0; padding: 0; width: 100%; }
+                            h1, h2, h3 { color: #1a237e; }
+                            p, li { font-size: 14px; line-height: 1.6; }
+                        </style>
+                    </head>
+                    <body>
+                        ${resumeRawHtml}
+                    </body>
+                    </html>
+                `;
+            }
+
+            const opt = {
+                margin:       [15, 15, 15, 15],
+                filename:     `CareerCraft-Resume-${interviewId}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { 
+                    scale: 2, 
+                    useCORS: true, 
+                    logging: false,
+                    backgroundColor: '#ffffff'
+                },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            await html2pdf().set(opt).from(resumeRawHtml).save();
+
+        } catch (err) {
+            console.error("Local client compiler download error:", err);
+        } finally {
+            setDownloading(false);
         }
-
-        // 🚀 FIX: Wrap inside a clean HTML skeleton to enforce strict page styling and colors
-        if (!resumeRawHtml.includes('<html')) {
-            resumeRawHtml = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="utf-8">
-                    <style>
-                        body { font-family: 'Arial', sans-serif; color: #333; margin: 0; padding: 0; width: 100%; }
-                        h1, h2, h3 { color: #1a237e; }
-                        p, li { font-size: 14px; line-height: 1.6; }
-                    </style>
-                </head>
-                <body>
-                    ${resumeRawHtml}
-                </body>
-                </html>
-            `;
-        }
-
-        // Create an active offline isolated processing worker element
-        const opt = {
-            margin:       [15, 15, 15, 15],
-            filename:     `CareerCraft-Resume-${interviewId}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { 
-                scale: 2, 
-                useCORS: true, 
-                logging: false,
-                backgroundColor: '#ffffff' // Forcefully draws a solid crisp background matrix
-            },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        // 🏁 Using html2pdf's absolute programmatic pipeline string override
-        await html2pdf().set(opt).from(resumeRawHtml).save();
-
-    } catch (err) {
-        console.error("Local client compiler download error:", err);
-    } finally {
-        setDownloading(false);
-    }
-};
-
-
-
-
-
+    };
 
     const report = rawReport?.interviewReport || rawReport;
 
@@ -151,6 +143,7 @@ const Interview = () => {
     const behavioralQuestions = report?.behavioralQuestions || [];
     const preparationPlan = report?.preparationPlan || [];
     const skillGaps = report?.skillGaps || [];
+    const resumeRawHtml = report?.resumeHtml || report?.html || report?.generatedHtml || report?.resume;
 
     return (
         <div className='interview-page'>
@@ -223,6 +216,22 @@ const Interview = () => {
                                     {preparationPlan.map((day, idx) => (
                                         <RoadMapDay key={day?.day || idx} day={day} />
                                     ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* 📄 ADDED: Seamless Inline Resume Document Render Core Container Preview Area */}
+                        {activeNav === 'resume' && (
+                            <section>
+                                <div className='content-header'>
+                                    <h2>Tailored ATS-Friendly Resume Preview</h2>
+                                </div>
+                                <div className='resume-preview-wrapper' style={{ background: '#ffffff', color: '#333333', padding: '2rem', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', minHeight: '500px', overflowY: 'auto' }}>
+                                    {resumeRawHtml ? (
+                                        <div dangerouslySetInnerHTML={{ __html: resumeRawHtml }} />
+                                    ) : (
+                                        <p style={{ color: '#666' }}>No structured resume template cached in this session. Re-generate to map elements.</p>
+                                    )}
                                 </div>
                             </section>
                         )}
