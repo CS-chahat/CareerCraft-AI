@@ -70,59 +70,97 @@ const Interview = () => {
         }
     }, [ interviewId ])
 
-    const handleDownload = async () => {
-        try {
-            setDownloading(true);
-            
-            const reportData = rawReport?.interviewReport || rawReport;
-            let resumeRawHtml = reportData?.resumeHtml || reportData?.html || reportData?.generatedHtml || reportData?.resume;
 
-            if (!resumeRawHtml) {
-                alert("Resume document layout view target context missing from AI database registry.");
-                return;
-            }
 
-            // Wrap inside a clean HTML skeleton to enforce strict page styling and colors
-            if (!resumeRawHtml.includes('<html')) {
-                resumeRawHtml = `
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <meta charset="utf-8">
-                        <style>
-                            body { font-family: 'Arial', sans-serif; color: #333; margin: 0; padding: 0; width: 100%; }
-                            h1, h2, h3 { color: #1a237e; }
-                            p, li { font-size: 14px; line-height: 1.6; }
-                        </style>
-                    </head>
-                    <body>
-                        ${resumeRawHtml}
-                    </body>
-                    </html>
-                `;
-            }
 
-            const opt = {
-                margin:       [15, 15, 15, 15],
-                filename:     `CareerCraft-Resume-${interviewId}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { 
-                    scale: 2, 
-                    useCORS: true, 
-                    logging: false,
-                    backgroundColor: '#ffffff'
-                },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
+const handleDownload = async () => {
+    try {
+        setDownloading(true);
+        
+        const reportData = rawReport?.interviewReport || rawReport;
+        const resumeRawHtml = reportData?.resumeHtml || reportData?.html || reportData?.generatedHtml || reportData?.resume;
 
-            await html2pdf().set(opt).from(resumeRawHtml).save();
-
-        } catch (err) {
-            console.error("Local client compiler download error:", err);
-        } finally {
-            setDownloading(false);
+        if (!resumeRawHtml) {
+            alert("Resume document layout view target context missing from AI database registry.");
+            return;
         }
-    };
+
+        // 🚀 THE FIX: Create an independent hidden document iframe block to completely isolate SCSS dark mode pollution
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'visibility';
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '210mm'; // Standard A4 Width
+        iframe.style.height = '100%';
+        iframe.style.border = 'none';
+        iframe.style.zIndex = '-9999';
+        
+        document.body.appendChild(iframe);
+        
+        // Write pristine clean HTML with standard crisp black text styles directly inside the iframe
+        const iframeDoc = iframe.contentWindow.document;
+        iframeDoc.open();
+        iframeDoc.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    body { 
+                        font-family: 'Arial', 'Helvetica', sans-serif !important; 
+                        color: #000000 !important; 
+                        background: #ffffff !important; 
+                        margin: 0 !important; 
+                        padding: 20px !important; 
+                        width: 100% !important;
+                        box-sizing: border-box !important;
+                    }
+                    div, p, span, h1, h2, h3, li, td { 
+                        color: #000000 !important; 
+                        background: transparent !important;
+                    }
+                </style>
+            </head>
+            <body>
+                ${resumeRawHtml}
+            </body>
+            </html>
+        `);
+        iframeDoc.close();
+
+        // Small dynamic timeout to let the browser frame paint the nodes before compilation
+        await new Promise(resolve => setTimeout(resolve, 350));
+
+        const opt = {
+            margin:       [10, 10, 10, 10],
+            filename:     `CareerCraft-Resume-${interviewId}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { 
+                scale: 2, 
+                useCORS: true, 
+                logging: false,
+                backgroundColor: '#ffffff'
+            },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        // Render directly from the pristine isolated iframe body context
+        await html2pdf().set(opt).from(iframeDoc.body).save();
+
+        // Cleanup DOM garbage
+        document.body.removeChild(iframe);
+
+    } catch (err) {
+        console.error("Local client compiler download error:", err);
+    } finally {
+        setDownloading(false);
+    }
+};
+    
+
+
+
 
     const report = rawReport?.interviewReport || rawReport;
 
