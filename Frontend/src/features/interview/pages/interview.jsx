@@ -68,37 +68,48 @@ const Interview = () => {
         }
     }, [ interviewId ])
 
-    // ✅ FIXED: Direct serverless clean resume compiler loop logic
     const handleDownload = async () => {
-        try {
-            setDownloading(true)
-            
-            // Raw internal check logic definitions for report documents payload mapping
-            const reportData = rawReport?.interviewReport || rawReport;
-            const resumeRawHtml = reportData?.resumeHtml || reportData?.html;
+    try {
+        setDownloading(true)
+        
+        const reportData = rawReport?.interviewReport || rawReport;
+        
+        // 🔍 Yeh line aapko inspect element mein poora object dikha degi:
+        console.log("=== DB SE AAYA HUA POORA REPORT DATA ===", reportData);
 
-            if (!resumeRawHtml) {
-                alert("Resume document layout view target context missing from AI database registry.");
-                return;
-            }
+        const resumeRawHtml = reportData?.resumeHtml || reportData?.html || reportData?.generatedHtml || reportData?.resume;
 
-            // High definition styling parameters targeting a neat professional clean print mapping
-            const options = {
-                margin:       [15, 15, 15, 15],
-                filename:     `CareerCraft-Resume-${interviewId}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, logging: false },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            // 🚀 Directly compile raw back-end string data bypassing physical portal screen components entirely!
-            await html2pdf().set(options).from(resumeRawHtml).save();
-        } catch (err) {
-            console.error("Local client compiler download error:", err)
-        } finally {
-            setDownloading(false)
+        if (!resumeRawHtml) {
+            alert("Resume document layout view target context missing from AI database registry.");
+            return;
         }
+
+        const options = {
+            margin:       [15, 15, 15, 15],
+            filename:     `CareerCraft-Resume-${interviewId}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, logging: false },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        await html2pdf().set(options).from(resumeRawHtml).save();
+    } catch (err) {
+        console.error("Local client compiler download error:", err)
+    } finally {
+        setDownloading(false)
     }
+}
+
+
+
+
+
+
+
+
+
+
+
 
     const report = rawReport?.interviewReport || rawReport;
 
