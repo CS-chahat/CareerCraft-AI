@@ -68,46 +68,57 @@ const Interview = () => {
         }
     }, [ interviewId ])
 
+    
+
+
     const handleDownload = async () => {
     try {
         setDownloading(true);
         
         const reportData = rawReport?.interviewReport || rawReport;
-        const resumeRawHtml = reportData?.resumeHtml || reportData?.html || reportData?.generatedHtml || reportData?.resume;
+        let resumeRawHtml = reportData?.resumeHtml || reportData?.html || reportData?.generatedHtml || reportData?.resume;
 
         if (!resumeRawHtml) {
             alert("Resume document layout view target context missing from AI database registry.");
             return;
         }
 
-        // 🚀 FIX FOR BLANK PDF: Dynamically create a hidden container to compile the raw HTML properly
-        const workerDiv = document.createElement('div');
-        workerDiv.innerHTML = resumeRawHtml;
-        
-        // Inline layout corrections for canvas parser
-        workerDiv.style.position = 'absolute';
-        workerDiv.style.left = '-9999px';
-        workerDiv.style.width = '210mm'; // Standard A4 width format
-        document.body.appendChild(workerDiv);
+        // 🚀 FIX: Wrap inside a clean HTML skeleton to enforce strict page styling and colors
+        if (!resumeRawHtml.includes('<html')) {
+            resumeRawHtml = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <style>
+                        body { font-family: 'Arial', sans-serif; color: #333; margin: 0; padding: 0; width: 100%; }
+                        h1, h2, h3 { color: #1a237e; }
+                        p, li { font-size: 14px; line-height: 1.6; }
+                    </style>
+                </head>
+                <body>
+                    ${resumeRawHtml}
+                </body>
+                </html>
+            `;
+        }
 
-        const options = {
-            margin:       [10, 10, 10, 10],
+        // Create an active offline isolated processing worker element
+        const opt = {
+            margin:       [15, 15, 15, 15],
             filename:     `CareerCraft-Resume-${interviewId}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { 
                 scale: 2, 
                 useCORS: true, 
                 logging: false,
-                letterRendering: true 
+                backgroundColor: '#ffffff' // Forcefully draws a solid crisp background matrix
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        // Execute sequential render cycle
-        await html2pdf().set(options).from(workerDiv).save();
-
-        // Garbage collection cleanup
-        document.body.removeChild(workerDiv);
+        // 🏁 Using html2pdf's absolute programmatic pipeline string override
+        await html2pdf().set(opt).from(resumeRawHtml).save();
 
     } catch (err) {
         console.error("Local client compiler download error:", err);
@@ -115,8 +126,6 @@ const Interview = () => {
         setDownloading(false);
     }
 };
-
-
 
 
 
