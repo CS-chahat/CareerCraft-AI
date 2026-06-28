@@ -70,13 +70,9 @@ const Interview = () => {
 
     const handleDownload = async () => {
     try {
-        setDownloading(true)
+        setDownloading(true);
         
         const reportData = rawReport?.interviewReport || rawReport;
-        
-        // 🔍 Yeh line aapko inspect element mein poora object dikha degi:
-        console.log("=== DB SE AAYA HUA POORA REPORT DATA ===", reportData);
-
         const resumeRawHtml = reportData?.resumeHtml || reportData?.html || reportData?.generatedHtml || reportData?.resume;
 
         if (!resumeRawHtml) {
@@ -84,25 +80,41 @@ const Interview = () => {
             return;
         }
 
+        // 🚀 FIX FOR BLANK PDF: Dynamically create a hidden container to compile the raw HTML properly
+        const workerDiv = document.createElement('div');
+        workerDiv.innerHTML = resumeRawHtml;
+        
+        // Inline layout corrections for canvas parser
+        workerDiv.style.position = 'absolute';
+        workerDiv.style.left = '-9999px';
+        workerDiv.style.width = '210mm'; // Standard A4 width format
+        document.body.appendChild(workerDiv);
+
         const options = {
-            margin:       [15, 15, 15, 15],
+            margin:       [10, 10, 10, 10],
             filename:     `CareerCraft-Resume-${interviewId}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, logging: false },
+            html2canvas:  { 
+                scale: 2, 
+                useCORS: true, 
+                logging: false,
+                letterRendering: true 
+            },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        await html2pdf().set(options).from(resumeRawHtml).save();
+        // Execute sequential render cycle
+        await html2pdf().set(options).from(workerDiv).save();
+
+        // Garbage collection cleanup
+        document.body.removeChild(workerDiv);
+
     } catch (err) {
-        console.error("Local client compiler download error:", err)
+        console.error("Local client compiler download error:", err);
     } finally {
-        setDownloading(false)
+        setDownloading(false);
     }
-}
-
-
-
-
+};
 
 
 
